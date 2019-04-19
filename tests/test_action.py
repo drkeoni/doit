@@ -149,7 +149,7 @@ class TestCmdExpandAction(object):
     def test_task_meta_reference(self):
         cmd = "%s %s/myecho.py" % (executable, TEST_PATH)
         cmd += " %(dependencies)s - %(changed)s - %(targets)s"
-        dependencies = ["data/dependency1", "data/dependency2", ":dep_on_task"]
+        dependencies = ["data/dependency1", "data/dependency2"]
         targets = ["data/target", "data/targetXXX"]
         task = Task('Fake', [cmd], dependencies, targets)
         task.dep_changed = ["data/dependency1"]
@@ -243,6 +243,43 @@ class TestCmdExpandAction(object):
         task = Task('Fake', [cmd])
         my_action = task.actions[0]
         assert pytest.raises(action.InvalidTask, my_action.expand_action)
+
+
+class TestCmdActionStringFormatting(object):
+
+    def test_old(self, monkeypatch):
+        monkeypatch.setattr(action.CmdAction, 'STRING_FORMAT', 'old')
+        cmd = "%s %s/myecho.py" % (executable, TEST_PATH)
+        cmd += " %(dependencies)s - %(opt1)s"
+        task = Task('Fake', [cmd], ['data/dependency1'])
+        task.options = {'opt1':'abc'}
+        my_action = task.actions[0]
+        assert my_action.execute() is None
+        got = my_action.out.strip()
+        assert "data/dependency1 - abc" == got
+
+    def test_new(self, monkeypatch):
+        monkeypatch.setattr(action.CmdAction, 'STRING_FORMAT', 'new')
+        cmd = "%s %s/myecho.py" % (executable, TEST_PATH)
+        cmd += " {dependencies} - {opt1}"
+        task = Task('Fake', [cmd], ['data/dependency1'])
+        task.options = {'opt1':'abc'}
+        my_action = task.actions[0]
+        assert my_action.execute() is None
+        got = my_action.out.strip()
+        assert "data/dependency1 - abc" == got
+
+    def test_both(self, monkeypatch):
+        monkeypatch.setattr(action.CmdAction, 'STRING_FORMAT', 'both')
+        cmd = "%s %s/myecho.py" % (executable, TEST_PATH)
+        cmd += " {dependencies} - %(opt1)s"
+        task = Task('Fake', [cmd], ['data/dependency1'])
+        task.options = {'opt1':'abc'}
+        my_action = task.actions[0]
+        assert my_action.execute() is None
+        got = my_action.out.strip()
+        assert "data/dependency1 - abc" == got
+
 
 
 class TestCmd_print_process_output_line(object):

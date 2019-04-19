@@ -115,6 +115,8 @@ class CmdAction(BaseAction):
     @ivar pkwargs: Popen arguments except 'stdout' and 'stderr'
     """
 
+    STRING_FORMAT = 'old'
+
     def __init__(self, action, task=None, save_out=None, shell=True,
                  encoding='utf-8', decode_error='replace', buffering=0,
                  **pkwargs): #pylint: disable=W0231
@@ -298,7 +300,14 @@ class CmdAction(BaseAction):
             else:
                 pos_val = ''
             subs_dict[self.task.pos_arg] = pos_val
-        return self.action % subs_dict
+
+        if self.STRING_FORMAT == 'old':
+            return self.action % subs_dict
+        elif self.STRING_FORMAT == 'new':
+            return self.action.format(**subs_dict)
+        else:
+            assert self.STRING_FORMAT == 'both'
+            return self.action.format(**subs_dict) % subs_dict
 
     def __str__(self):
         return "Cmd: %s" % self._action
